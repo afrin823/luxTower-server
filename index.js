@@ -29,6 +29,7 @@ async function run() {
 
     const apartmentCollection = client.db("AppermentDB").collection("appermentCollection");
     const coponCollection = client.db("cuponDB").collection("couponCollection");
+    const bookedApartments = client.db("bookDB").collection("bookedApartments");
 
     //apartment
     app.get('/apartment', async(req, res) => {
@@ -39,6 +40,19 @@ async function run() {
     app.get('/coupon', async(req, res) => {
       const result = await coponCollection.find().toArray();
       res.send(result);
+    })
+    //booked Apartment
+    app.get('/bookedApartments', async(req, res) => {
+      const email = req.query.email;
+      const query = {email: email};
+      const result = await bookedApartments.find(query).toArray();
+      res.send(result)
+    })
+    app.post('/bookedApartments', async(req, res) => {
+      const bookAprtment = req.body;
+      const result = await bookedApartments.insertOne(bookAprtment);
+      res.send(result)
+
     })
 
     // Send a ping to confirm a successful connection
