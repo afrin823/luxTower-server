@@ -9,6 +9,7 @@ const corsOptions = {
   origin: [
     "http://localhost:5173",
     "https://building-management-39823.web.app",
+    "https://luxtower.netlify.app",
   ],
   credentials: true,
   optionSuccessStatus: 200,
