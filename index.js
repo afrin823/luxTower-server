@@ -37,12 +37,42 @@ async function run() {
     const apartmentCollection = client.db("AppermentDB").collection("apartmentCollection"); // Corrected collection name
     const coponCollection = client.db("cuponDB").collection("couponCollection");
     const bookedApartments = client.db("bookDB").collection("bookedApartments");
-    const userCollecton = client.db("AppartmentUser").collection("users"); // Define the users collection
+    const userCollection = client.db("AppartmentUser").collection("users"); // Define the users collection
 
     //users related api
+    app.get('/users', async(req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result)
+    });
+    
     app.post('/users', async(req, res) => {
       const user = req.body;
-      const result = await userCollecton.insertOne(user);
+      const query = {email: user.email}
+      const existingUser = await userCollection.findOne(query);
+
+      if(existingUser){
+        return res.send({message: 'user already exist', insertedId: null})
+      }
+
+      const result = await userCollection.insertOne(user);
+      res.send(result)
+    })
+    app.patch('/users/admin/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)}
+      const updateDoc = {
+        $set: {
+          role: "admin"
+        }
+      }
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result)
+    })
+    //delete users
+    app.delete('/users/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await userCollection.deleteOne(query);
       res.send(result)
     })
 
@@ -69,15 +99,15 @@ async function run() {
     
     app.get("/usersRole", async (req, res) => {
       const query = req.query;
-
+    
       if (!query.email) {
         return res.status(400).send({ message: "Unauthorized" });
       }
-
-      if (req?.query) {
-        const result = await users.findOne({ email: query.email });
+    
+      try {
+        const result = await userCollection.findOne({ email: query.email });
         res.send(result);
-      } else {
+      } catch (error) {
         res.status(404).send({ message: "User not found" });
       }
     });
