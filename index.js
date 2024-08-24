@@ -38,7 +38,9 @@ async function run() {
     const apartmentCollection = client.db("AppermentDB").collection("appermentCollection"); // Corrected collection name
     const coponCollection = client.db("cuponDB").collection("couponCollection");
     const bookedApartments = client.db("bookDB").collection("bookedApartments");
-    const userCollection = client.db("AppartmentUser").collection("users"); // Define the users collection
+    const userCollection = client.db("AppartmentUser").collection("users");
+    const announcements = client.db("Announce").collection("announcements")
+     // Define the users collection
 
     //jwt token
     app.post('/jwt', async (req, res) => {
@@ -130,6 +132,17 @@ async function run() {
       const result = await userCollection.deleteOne(query);
       res.send(result)
     })
+
+    // announcements
+    app.get("/announcements", async (req, res) => {
+      const result = (await announcements.find().toArray()).reverse();
+      res.send(result)
+    })
+    app.post("/announcements", async (req, res) => {
+      const body = req.body;
+      await announcements.insertOne(body);
+      res.send({ message: "Announcement successfully added." });
+    });
 
     // Apartments endpoint
     app.get('/apartment', async (req, res) => {
