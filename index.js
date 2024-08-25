@@ -40,6 +40,7 @@ async function run() {
     const bookedApartments = client.db("bookDB").collection("bookedApartments");
     const userCollection = client.db("AppartmentUser").collection("users");
     const announcements = client.db("Announce").collection("announcements")
+    const wishlistCollection = client.db("AppermentDB").collection("wishlistCollection")
      // Define the users collection
 
     //jwt token
@@ -101,18 +102,25 @@ async function run() {
       res.send({ admin })
     })
 
-    app.post('/users', async (req, res) => {
-      const user = req.body;
-      const query = { email: user.email }
-      const existingUser = await userCollection.findOne(query);
-
+    app.post("/users", async (req, res) => {
+      const data = req.body;
+    
+      // Check if the email already exists
+      const existingUser = await userCollection.findOne({ email: data.email }); // Corrected
+    
       if (existingUser) {
-        return res.send({ message: 'user already exist', insertedId: null })
+        res.send({ message: "Login Success" });
+      } else {
+        const doc = {
+          name: data.name,
+          email: data.email,
+          role: "",
+        };
+        await userCollection.insertOne(doc); // Corrected
+        res.send({ message: "Registration Success" });
       }
+    });
 
-      const result = await userCollection.insertOne(user);
-      res.send(result)
-    })
 
     app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
@@ -167,94 +175,78 @@ async function run() {
 
  
     // Booked apartments endpoint
-    app.get('/bookedApartments', async (req, res) => {
-      try {
-        const query = { status: "pending" };
-        const pendingApartments = await bookedApartments.find(query).toArray();
+  
 
-        if (pendingApartments.length > 0) {
-          const apartmentIds = pendingApartments.map(p => new ObjectId(p.apartment_id));
-          const apartments = await bookedApartments.find({ _id: { $in: apartmentIds } }).toArray();
-          const apartmentMap = new Map(apartments.map(a => [a._id.toString(), a]));
+ 
+// app.get("/usersRole", async (req, res) => {
+//   const query = req.query;
 
-          const apartmentDetails = pendingApartments.map(pendingApartment => {
-            const apartment = apartmentMap.get(pendingApartment.apartment_id.toString());
-            if (apartment) {
-              return {
-                _id: pendingApartment._id,
-                floorNo: apartment.floorNo,
-                blockName: apartment.blockName,
-                apartmentNo: apartment.apartmentNo,
-                request_date: pendingApartment.request_date,
-                rent: apartment.rent,
-              };
-            }
-            return null;
-          }).filter(detail => detail !== null);
+//   if (!query.email) {
+//     return res.status(400).send({ message: "Unauthorized" });
+//   }
 
-          res.send(apartmentDetails);
-        } else {
-          res.send([]);
-        }
-      } catch (error) {
-        res.status(500).send({ error: "Failed to fetch booked apartments." });
+//   if (req?.query) {
+//     const result = await userCollection.findOne({ email: query.email }); // Corrected
+//     res.send(result);
+//   } else {
+//     res.status(404).send({ message: "User not found" });
+//   }
+// });
+
+app.get("/bookedApartments/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+    const query = { "userInfo.email": email };
+
+    const booked_apartment = await wishlistCollection.findOne(query);
+
+    if (booked_apartment) {
+      const apartmentId = booked_apartment.apartment_id;
+      const apartmentQuery = { _id: new ObjectId(apartmentId) };
+      const apartmentInfo = await apartmentCollection.findOne(apartmentQuery);
+
+      if (apartmentInfo) {
+        const result = {
+          _id: booked_apartment._id,
+          image: apartmentInfo.image,
+          block_name: apartmentInfo.block_name,
+          apartment_no: apartmentInfo.apartment_no,
+          floor_no: apartmentInfo.floor_no,
+          rent: apartmentInfo.rent,
+          status: booked_apartment.status,
+          request_date: booked_apartment.request_date,
+        };
+
+        res.status(200).send(result);
+      } else {
+        res.status(404).send({ error: "Apartment not found." });
       }
-    });
-
-    app.get("/bookedApartments/:email", async (req, res) => {
-      try {
-        const email = req.params.email;
-        const query = { "userInfo.email": email };
-
-        const booked_apartment = await bookedApartments.findOne(query);
-
-        if (booked_apartment) {
-          const apartmentId = booked_apartment.apartment_id;
-          const apartmentQuery = { _id: new ObjectId(apartmentId) };
-          const apartmentInfo = await apartmentCollection.findOne(apartmentQuery);
-
-          if (apartmentInfo) {
-            const result = {
-              _id: booked_apartment._id,
-              image: apartmentInfo.image,
-              block_name: apartmentInfo.block_name,
-              apartment_no: apartmentInfo.apartment_no,
-              floor_no: apartmentInfo.floor_no,
-              rent: apartmentInfo.rent,
-              status: booked_apartment.status,
-              request_date: booked_apartment.request_date,
-            };
-
-            res.status(200).send(result);
-          } else {
-            res.status(404).send({ error: "Apartment not found." });
-          }
-        } else {
-          res.status(404).send({ error: "No booking found for this email." });
-        }
-      } catch (error) {
-        res.status(500).send({ error: "Failed to fetch booked apartment." });
-      }
-    });
+    } else {
+      res.status(404).send({ error: "No booking found for this email." });
+    }
+  } catch (error) {
+    res.status(500).send({ error: "Failed to fetch booked apartment." });
+  }
+});
 
     app.patch("/bookedApartments/:id", async (req, res) => {
       try {
         const id = req.params.id;
         const body = req.body;
         const userRole = body?.role === "member" ? "member" : "";
-
+    
         const filter = { _id: new ObjectId(id) };
         const apartment = await bookedApartments.findOne(filter);
-
+    
         const userEmail = apartment.userInfo.email;
         const filter2 = { email: userEmail };
-
+    
         const today = new Date();
         const day = String(today.getDate()).padStart(2, "0");
         const month = String(today.getMonth() + 1).padStart(2, "0");
         const year = today.getFullYear();
         const formattedDate = `${day}/${month}/${year}`;
-
+    
         const updateDoc = {
           $set: {
             status: "checked",
@@ -266,26 +258,38 @@ async function run() {
             role: userRole,
           },
         };
-
+    
         await bookedApartments.updateMany(filter, updateDoc);
-        await users.updateOne(filter2, updateDoc2);
-
+        await userCollection.updateOne(filter2, updateDoc2);
+    
         res.send({ status: 200, message: "Agreement Accept Success" });
       } catch (error) {
         res.send({ status: 400, message: "Something went wrong! try later." });
       }
     });
 
-    app.post('/bookedApartments', async (req, res) => {
-      try {
-        const bookApartment = req.body;
-        const result = await bookedApartments.insertOne(bookApartment);
-        res.send(result);
-      } catch (error) {
-        res.status(500).send({ error: "Failed to book the apartment." });
-      }
+    app.get("/bookedApartments", async (req, res) => {
+      const bookedapartment = req.body;
+      const result = await wishlistCollection.find().toArray();
+      res.send(result);
+    })
+    
+    app.post("/bookedApartments", async (req, res) => {
+      const apartmentInfo = req.body;
+      console.log(apartmentInfo);
+      const result = await  wishlistCollection.insertOne(apartmentInfo);
+      res.send(result)
+      // const userEmail = apartmentInfo.userInfo.email;
+      // const users = await userCollection.findOne({ email: userEmail }); // Corrected
+    
+      // if (users.role === "admin") {
+      //   res.send({ message: "It's not available for you. Sorry!" });
+      // } else {
+      //   // Rest of the booking logic...
+      // }
     });
-
+    
+    
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
