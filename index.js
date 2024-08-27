@@ -10,7 +10,7 @@ const corsOptions = {
   origin: [
     "http://localhost:5173",
     // "http://localhost:5173",
-    // "https://building-management-39823.web.app",
+    "https://building-management-39823.web.app",
     // "https://luxtower.netlify.app",
   ],
   credentials: true,
@@ -229,45 +229,46 @@ app.get("/bookedApartments/:email", async (req, res) => {
   }
 });
 
-    app.patch("/bookedApartments/:id", async (req, res) => {
-      try {
-        const id = req.params.id;
-        const body = req.body;
-        const userRole = body?.role === "member" ? "member" : "";
-    
-        const filter = { _id: new ObjectId(id) };
-        const apartment = await bookedApartments.findOne(filter);
-    
-        const userEmail = apartment.userInfo.email;
-        const filter2 = { email: userEmail };
-    
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, "0");
-        const month = String(today.getMonth() + 1).padStart(2, "0");
-        const year = today.getFullYear();
-        const formattedDate = `${day}/${month}/${year}`;
-    
-        const updateDoc = {
-          $set: {
-            status: "checked",
-            accept_date: userRole === "member" ? formattedDate : "rejected",
-          },
-        };
-        const updateDoc2 = {
-          $set: {
-            role: userRole,
-          },
-        };
-    
-        await bookedApartments.updateMany(filter, updateDoc);
-        await userCollection.updateOne(filter2, updateDoc2);
-    
-        res.send({ status: 200, message: "Agreement Accept Success" });
-      } catch (error) {
-        res.send({ status: 400, message: "Something went wrong! try later." });
-      }
-    });
+app.patch("/bookedApartments/:id", async (req, res) => {
+  try {
+      const id = req.params.id;
+      const { status } = req.body;
 
+      // Convert string id to ObjectId
+      const filter = { _id: new ObjectId(id) };
+      const apartment = await wishlistCollection.findOne(filter);
+
+      if (!apartment) {
+          return res.status(404).send({ status: 404, message: "Apartment not found" });
+      }
+
+      const userEmail = apartment.userInfo.email;
+      const filter2 = { email: userEmail };
+
+      // Get today's date
+      const today = new Date();
+      const day = String(today.getDate()).padStart(2, "0");
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const year = today.getFullYear();
+      const formattedDate = `${day}/${month}/${year}`;
+
+      // Prepare the update document
+      const updateDoc = {
+          $set: {
+              status: status || "checked", // Set status to "checked" or use provided status
+              accept_date: formattedDate,
+          },
+      };
+
+      // Update the apartment document
+      await wishlistCollection.updateOne(filter, updateDoc);
+
+      res.send({ status: 200, message: "Agreement Acceptance Successful" });
+  } catch (error) {
+      console.error("Error updating the apartment:", error);
+      res.status(500).send({ status: 500, message: "Something went wrong! Please try later." });
+  }
+});
     app.get("/bookedApartments", async (req, res) => {
       const bookedapartment = req.body;
       const result = await wishlistCollection.find().toArray();
