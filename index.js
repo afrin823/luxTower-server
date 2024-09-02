@@ -3,6 +3,7 @@ const app = express();
 const cors = require('cors');
 const jwt = require('jsonwebtoken')
 require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 4000;
 
 // Middleware
@@ -43,6 +44,20 @@ async function run() {
     const wishlistCollection = client.db("AppermentDB").collection("wishlistCollection")
     // Define the users collection
 
+    //payment intent
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: calculateOrderAmount(items),
+        currency: "usd",
+        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+    })
     //jwt token
     app.post('/jwt', async (req, res) => {
       const user = req.body;
@@ -187,7 +202,7 @@ async function run() {
     });
 
     // Booked apartments endpoint
-  
+
     app.get("/bookedApartments/:email", async (req, res) => {
       try {
         const user = req.params.email;
