@@ -36,7 +36,7 @@ async function run() {
     await client.connect(); // Ensure MongoDB client connects
 
     const apartmentCollection = client.db("AppermentDB").collection("appermentCollection"); // Corrected collection name
-    const coponCollection = client.db("cuponDB").collection("couponCollection");
+    const couponCollection = client.db("cuponDB").collection("couponCollection");
     const bookedApartments = client.db("bookDB").collection("bookedApartments");
     const userCollection = client.db("AppartmentUser").collection("users");
     const announcements = client.db("Announce").collection("announcements")
@@ -148,8 +148,22 @@ async function run() {
     })
     app.post("/announcements", async (req, res) => {
       const body = req.body;
-      await announcements.insertOne(body);
-      res.send({ message: "Announcement successfully added." });
+      const result = await announcements.insertOne(body);
+      res.send(result);
+    });
+    app.get("/usersRole", async (req, res) => {
+      const query = req.query;
+
+      if (!query.email) {
+        return res.status(400).send({ message: "Unauthorized" });
+      }
+
+      if (req?.query) {
+        const result = await userCollection.findOne({ email: query.email });
+        res.send(result);
+      } else {
+        res.status(404).send({ message: "User not found" });
+      }
     });
 
     // Apartments endpoint
@@ -165,7 +179,7 @@ async function run() {
     // Coupons endpoint
     app.get('/coupon', async (req, res) => {
       try {
-        const result = (await coponCollection.find().toArray()).reverse();
+        const result = (await couponCollection.find().toArray()).reverse();
         res.send(result);
       } catch (error) {
         res.status(500).send({ error: "Failed to fetch coupons." });
@@ -173,41 +187,18 @@ async function run() {
     });
 
     // Booked apartments endpoint
+  
     app.get("/bookedApartments/:email", async (req, res) => {
       try {
-        const email = req.params.email;
-        const query = { "userInfo.email": email };
-
-        const booked_apartment = await wishlistCollection.findOne(query);
-
-        if (booked_apartment) {
-          const apartmentId = booked_apartment.apartment_id;
-          const apartmentQuery = { _id: new ObjectId(apartmentId) };
-          const apartmentInfo = await apartmentCollection.findOne(apartmentQuery);
-
-          if (apartmentInfo) {
-            const result = {
-              _id: booked_apartment._id,
-              image: apartmentInfo.image,
-              block_name: apartmentInfo.block_name,
-              apartment_no: apartmentInfo.apartment_no,
-              floor_no: apartmentInfo.floor_no,
-              rent: apartmentInfo.rent,
-              status: booked_apartment.status,
-              request_date: booked_apartment.request_date,
-            };
-
-            res.status(200).send(result);
-          } else {
-            res.status(404).send({ error: "Apartment not found." });
-          }
-        } else {
-          res.status(404).send({ error: "No booking found for this email." });
-        }
+        const user = req.params.email;
+        const filter = { examineeEmail: user };
+        const result = await wishlistCollection.find(filter).toArray();
+        res.send(result);
       } catch (error) {
-        res.status(500).send({ error: "Failed to fetch booked apartment." });
+        res.status(500).send("Error fetching user's bids");
       }
     });
+
 
     app.patch("/bookedApartments/:id", async (req, res) => {
       try {
@@ -250,7 +241,7 @@ async function run() {
       }
     });
     app.get("/bookedApartments", async (req, res) => {
-      const bookedapartment = req.body;
+      const bookedApartments = req.body;
       const result = await wishlistCollection.find().toArray();
       res.send(result);
     })
@@ -259,15 +250,15 @@ async function run() {
     app.post("/bookedApartments", async (req, res) => {
       const apartmentInfo = req.body;
       const isExisting = await wishlistCollection.findOne({ 'userInfo.email': apartmentInfo.userInfo.email });
-  
+
       if (isExisting) {
-          return res.status(200).send({ message: "already existing" });
+        return res.status(200).send({ message: "already existing" });
       } else {
-          await wishlistCollection.insertOne(apartmentInfo);
-          return res.send({ status: 200, message: "Apartment booking success" });
+        await wishlistCollection.insertOne(apartmentInfo);
+        return res.send({ status: 200, message: "Apartment booking success" });
       }
-  });
-  
+    });
+
 
 
 
