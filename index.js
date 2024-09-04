@@ -50,13 +50,13 @@ async function run() {
       const amount = parseInt(price * 100);
 
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: calculateOrderAmount(items),
+        amount: amount,
         currency: "usd",
-        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
-        automatic_payment_methods: {
-          enabled: true,
-        },
+        payment_method_types: ['card']
       });
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
     })
     //jwt token
     app.post('/jwt', async (req, res) => {
@@ -68,21 +68,29 @@ async function run() {
     // middlewares
     // Middleware to verify token
     const verifyToken = (req, res, next) => {
-      // console.log('inside verify token', req.headers.authorization);
+      // Check if the authorization header is present
       if (!req.headers.authorization) {
-        return res.status(401).send({ message: 'unauthorized access' });
+        return res.status(401).send({ message: 'Unauthorized access' });
       }
-
-      const token = req.headers.authorization.split(' ')[1]; // Corrected from 'res.headers' to 'req.headers'
-
+    
+      const authHeader = req.headers.authorization;
+      const token = authHeader.split(' ')[1]; // Extract the token part
+    
+      // Check if the token is present after splitting
+      if (!token) {
+        return res.status(401).send({ message: 'Invalid token format' });
+      }
+    
+      // Verify the token using JWT
       jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if (err) {
-          return res.status(401).send({ message: 'unauthorized access' });
+          return res.status(401).send({ message: 'Unauthorized access' });
         }
-        req.decoded = decoded;
-        next();
+        req.decoded = decoded; // Save decoded data for further use
+        next(); // Proceed to the next middleware
       });
     };
+    
 
     //use verify admin after verify token
     const verifyAdmin = async (req, res, next) => {
@@ -203,17 +211,19 @@ async function run() {
 
     // Booked apartments endpoint
 
-    app.get("/bookedApartments/:email", async (req, res) => {
+    app.get("/bookedApartments/:email", verifyAdmin, verifyToken,  async (req, res) => {
       try {
         const user = req.params.email;
         const filter = { examineeEmail: user };
         const result = await wishlistCollection.find(filter).toArray();
         res.send(result);
       } catch (error) {
-        res.status(500).send("Error fetching user's bids");
+        res.status(500).send("Error fetching user's apartments");
       }
-    });
+    }); 
+    
 
+    
 
     app.patch("/bookedApartments/:id", async (req, res) => {
       try {
@@ -264,16 +274,41 @@ async function run() {
 
     app.post("/bookedApartments", async (req, res) => {
       const apartmentInfo = req.body;
-      const isExisting = await wishlistCollection.findOne({ 'userInfo.email': apartmentInfo.userInfo.email });
-
-      if (isExisting) {
-        return res.status(200).send({ message: "already existing" });
+    
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, "0");
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const year = now.getFullYear();
+      const requestDate = `${day}/${month}/${year}`;
+    
+      const doc = {
+        apartment_id: apartmentInfo.apartment_id,
+        userInfo: apartmentInfo.userInfo,
+        status: "pending",
+        request_date: requestDate,
+      };
+    
+      const userEmail = apartmentInfo.userInfo.email;
+    
+      const query = { "userInfo.email": userEmail };
+    
+      // Corrected to use userCollection
+      const userRole = await userCollection.findOne({ email: userEmail });
+    
+      if (userRole.role === "admin") {
+        res.send({ message: "It's not available for you. Sorry!" });
       } else {
-        await wishlistCollection.insertOne(apartmentInfo);
-        return res.send({ status: 200, message: "Apartment booking success" });
+        const isExist = await wishlistCollection.findOne(query);
+    
+        if (isExist) {
+          res.send({ message: "User has already booked an apartment." });
+        } else {
+          await wishlistCollection.insertOne(doc);
+          res.send({ status: 200, message: "Apartment booking success" });
+        }
       }
     });
-
+    
 
 
 
