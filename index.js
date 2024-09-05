@@ -68,29 +68,21 @@ async function run() {
     // middlewares
     // Middleware to verify token
     const verifyToken = (req, res, next) => {
-      // Check if the authorization header is present
+      // console.log('inside verify token', req.headers.authorization);
       if (!req.headers.authorization) {
-        return res.status(401).send({ message: 'Unauthorized access' });
+        return res.status(401).send({ message: 'unauthorized access' });
       }
-    
-      const authHeader = req.headers.authorization;
-      const token = authHeader.split(' ')[1]; // Extract the token part
-    
-      // Check if the token is present after splitting
-      if (!token) {
-        return res.status(401).send({ message: 'Invalid token format' });
-      }
-    
-      // Verify the token using JWT
+
+      const token = req.headers.authorization.split(' ')[1]; // Corrected from 'res.headers' to 'req.headers'
+
       jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if (err) {
-          return res.status(401).send({ message: 'Unauthorized access' });
+          return res.status(401).send({ message: 'unauthorized access' });
         }
-        req.decoded = decoded; // Save decoded data for further use
-        next(); // Proceed to the next middleware
+        req.decoded = decoded;
+        next();
       });
     };
-    
 
     //use verify admin after verify token
     const verifyAdmin = async (req, res, next) => {
@@ -137,7 +129,7 @@ async function run() {
         const doc = {
           name: data.name,
           email: data.email,
-          role: "",
+          role: "user",
         };
         await userCollection.insertOne(doc); // Corrected
         res.send({ message: "Registration Success" });
@@ -211,10 +203,11 @@ async function run() {
 
     // Booked apartments endpoint
 
-    app.get("/bookedApartments/:email", verifyAdmin, verifyToken,  async (req, res) => {
+    app.get("/bookedApartments/:email", async (req, res) => {
       try {
-        const user = req.params.email;
-        const filter = { examineeEmail: user };
+        const email = req.params.email;
+        console.log(email);
+        const filter = { email: email };
         const result = await wishlistCollection.find(filter).toArray();
         res.send(result);
       } catch (error) {
@@ -283,14 +276,14 @@ async function run() {
     
       const doc = {
         apartment_id: apartmentInfo.apartment_id,
-        userInfo: apartmentInfo.userInfo,
+        email: apartmentInfo.email,
         status: "pending",
         request_date: requestDate,
       };
     
-      const userEmail = apartmentInfo.userInfo.email;
-    
-      const query = { "userInfo.email": userEmail };
+      const userEmail = apartmentInfo.email;
+      
+      const query = { "email": userEmail };
     
       // Corrected to use userCollection
       const userRole = await userCollection.findOne({ email: userEmail });
