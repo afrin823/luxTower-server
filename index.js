@@ -54,7 +54,7 @@ async function run() {
         total_amount: paymentInfo.apartmentRent,
         currency: 'BDT',
         tran_id: tran_id, // use unique tran_id for each api call
-        success_url: 'http://localhost:3030/success',
+        success_url: `http://localhost:4000/payment/success/${tran_id}`,
         fail_url: 'http://localhost:3030/fail',
         cancel_url: 'http://localhost:3030/cancel',
         ipn_url: 'http://localhost:3030/ipn',
@@ -88,6 +88,10 @@ async function run() {
         res.send({ url: GatewayPageURL })
         console.log('Redirecting to: ', GatewayPageURL)
       });
+    })
+
+    app.post('/payment/success/:tranId', async(req, res) => {
+      console.log(req.param.tranId);
     })
 
 
@@ -209,22 +213,17 @@ async function run() {
 
     // Apartments endpoint
     app.get('/apartment', async (req, res) => {
-      try {
+    
         const result = await apartmentCollection.find().toArray();
         res.send(result);
-      } catch (error) {
-        res.status(500).send({ error: "Failed to fetch apartments." });
-      }
+     
     });
 
     // Coupons endpoint
     app.get('/coupon', async (req, res) => {
-      try {
         const result = (await couponCollection.find().toArray()).reverse();
         res.send(result);
-      } catch (error) {
-        res.status(500).send({ error: "Failed to fetch coupons." });
-      }
+ 
     });
 
     // Booked apartments endpoints
@@ -270,8 +269,7 @@ async function run() {
 
 
     app.patch("/bookedApartments/:id", async (req, res) => {
-      try {
-        const id = req.params.id;
+         const id = req.params.id;
         const { status } = req.body;
         const filter = { _id: new ObjectId(id) };
         const apartment = await wishlistCollection.findOne(filter);
@@ -298,9 +296,7 @@ async function run() {
 
         await wishlistCollection.updateOne(filter, updateDoc);
         res.send({ status: 200, message: "Agreement Acceptance Successful" });
-      } catch (error) {
-        res.status(500).send({ status: 500, message: "Something went wrong! Please try later." });
-      }
+   
     });
 
     app.get("/bookedApartments", async (req, res) => {
