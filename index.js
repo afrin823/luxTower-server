@@ -86,7 +86,7 @@ async function run() {
         // Redirect the user to payment gateway
         let GatewayPageURL = apiResponse.GatewayPageURL
         res.send({ url: GatewayPageURL })
-        console.log('Redirecting to: ', GatewayPageURL)
+        // console.log('Redirecting to: ', GatewayPageURL)
       });
     })
 
