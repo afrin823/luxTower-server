@@ -55,7 +55,7 @@ async function run() {
         currency: 'BDT',
         tran_id: tran_id, // use unique tran_id for each api call
         success_url: `http://localhost:4000/payment/success/${tran_id}`,
-        fail_url: 'http://localhost:3030/fail',
+        fail_url: `http://localhost:5173/dashboard/fail-payment/${tran_id}`,
         cancel_url: 'http://localhost:3030/cancel',
         ipn_url: 'http://localhost:3030/ipn',
         shipping_method: 'Courier',
@@ -103,10 +103,18 @@ async function run() {
           paymentStatus: true,
         },
       }
-    );
-    if(result.modifiedCount>0){
-      res.redirect(`http://localhost:5173/dashboard/success-payment/${req.params.tranId}`)
-    }
+      );
+      if (result.modifiedCount > 0) {
+        res.redirect(`http://localhost:5173/dashboard/success-payment/${req.params.tranId}`)
+      }
+    });
+    app.post('/payment/fail/:tranId', async (req, res) => {
+      const result = await wishlistCollection.deleteOne({
+        tranjectionId: req.params.tranId
+      });
+      if (result.deletedCount) {
+        res.redirect(`http://localhost:5173/dashboard/fail-payment/${req.params.tranId}`)
+      };
     })
 
 
