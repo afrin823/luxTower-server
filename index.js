@@ -86,12 +86,27 @@ async function run() {
         // Redirect the user to payment gateway
         let GatewayPageURL = apiResponse.GatewayPageURL
         res.send({ url: GatewayPageURL })
-        // console.log('Redirecting to: ', GatewayPageURL)
+        console.log('Redirecting to: ', GatewayPageURL)
+        const finalPayment = {
+          paymentInfo,
+          paymentStatus: false,
+          tranjectionId: tran_id,
+        };
+        const result = wishlistCollection.insertOne(finalPayment)
       });
     })
 
-    app.post('/payment/success/:tranId', async(req, res) => {
-      console.log(req.param.tranId);
+    app.post('/payment/success/:tranId', async (req, res) => {
+      console.log(req.params.tranId);
+      const result = await wishlistCollection.updateOne({ tranjectionId: req.params.tranId }, {
+        $set: {
+          paymentStatus: true,
+        },
+      }
+    );
+    if(result.modifiedCount>0){
+      res.redirect(`http://localhost:5173/dashboard/success-payment/${req.params.tranId}`)
+    }
     })
 
 
@@ -128,6 +143,7 @@ async function run() {
       }
       res.send({ admin });
     });
+
 
     app.post("/users", async (req, res) => {
       const data = req.body;
@@ -202,28 +218,25 @@ async function run() {
 
     app.get("/usersRole", async (req, res) => {
       const query = req.query;
-
       if (!query.email) {
         return res.status(400).send({ message: "Unauthorized" });
       }
-
       const result = await userCollection.findOne({ email: query.email });
       res.send(result);
     });
 
     // Apartments endpoint
     app.get('/apartment', async (req, res) => {
-    
-        const result = await apartmentCollection.find().toArray();
-        res.send(result);
-     
+      const result = await apartmentCollection.find().toArray();
+      res.send(result);
+
     });
 
     // Coupons endpoint
     app.get('/coupon', async (req, res) => {
-        const result = (await couponCollection.find().toArray()).reverse();
-        res.send(result);
- 
+      const result = (await couponCollection.find().toArray()).reverse();
+      res.send(result);
+
     });
 
     // Booked apartments endpoints
@@ -269,34 +282,34 @@ async function run() {
 
 
     app.patch("/bookedApartments/:id", async (req, res) => {
-         const id = req.params.id;
-        const { status } = req.body;
-        const filter = { _id: new ObjectId(id) };
-        const apartment = await wishlistCollection.findOne(filter);
+      const id = req.params.id;
+      const { status } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const apartment = await wishlistCollection.findOne(filter);
 
-        if (!apartment) {
-          return res.status(404).send({ status: 404, message: "Apartment not found" });
-        }
+      if (!apartment) {
+        return res.status(404).send({ status: 404, message: "Apartment not found" });
+      }
 
-        const userEmail = apartment.userInfo.email;
-        const filter2 = { email: userEmail };
+      const userEmail = apartment.userInfo.email;
+      const filter2 = { email: userEmail };
 
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, "0");
-        const month = String(today.getMonth() + 1).padStart(2, "0");
-        const year = today.getFullYear();
-        const formattedDate = `${day}/${month}/${year}`;
+      const today = new Date();
+      const day = String(today.getDate()).padStart(2, "0");
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const year = today.getFullYear();
+      const formattedDate = `${day}/${month}/${year}`;
 
-        const updateDoc = {
-          $set: {
-            status: status || "checked",
-            accept_date: formattedDate,
-          },
-        };
+      const updateDoc = {
+        $set: {
+          status: status || "checked",
+          accept_date: formattedDate,
+        },
+      };
 
-        await wishlistCollection.updateOne(filter, updateDoc);
-        res.send({ status: 200, message: "Agreement Acceptance Successful" });
-   
+      await wishlistCollection.updateOne(filter, updateDoc);
+      res.send({ status: 200, message: "Agreement Acceptance Successful" });
+
     });
 
     app.get("/bookedApartments", async (req, res) => {
