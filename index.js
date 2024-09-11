@@ -12,6 +12,8 @@ const corsOptions = {
   origin: [
     "http://localhost:5173",
     "https://building-management-39823.web.app",
+    // "https://buliding-management-server.vercel.app",
+    "https://luxtower.netlify.app"
   ],
   credentials: true,
   optionSuccessStatus: 200,
@@ -55,8 +57,8 @@ async function run() {
         total_amount: paymentInfo.apartmentRent,
         currency: 'BDT',
         tran_id: tran_id, // use unique tran_id for each api call
-        success_url: `http://localhost:4000/payment/success/${tran_id}`,
-        fail_url: `http://localhost:5173/dashboard/fail-payment/${tran_id}`,
+        success_url: `https://buliding-management-server.vercel.app/payment/success/${tran_id}`,
+        fail_url: `https://buliding-management-server.vercel.app/fail-payment/${tran_id}`,
         cancel_url: 'http://localhost:3030/cancel',
         ipn_url: 'http://localhost:3030/ipn',
         shipping_method: 'Courier',
@@ -106,7 +108,7 @@ async function run() {
       }
       );
       if (result.modifiedCount > 0) {
-        res.redirect(`http://localhost:5173/dashboard/success-payment/${req.params.tranId}`)
+        res.redirect(`https://buliding-management-server.vercel.app/dashboard/success-payment/${req.params.tranId}`)
       }
     });
     app.post('/payment/fail/:tranId', async (req, res) => {
@@ -114,7 +116,7 @@ async function run() {
         tranjectionId: req.params.tranId
       });
       if (result.deletedCount) {
-        res.redirect(`http://localhost:5173/dashboard/fail-payment/${req.params.tranId}`)
+        res.redirect(`https://buliding-management-server.vercel.app/dashboard/fail-payment/${req.params.tranId}`)
       };
     })
 
@@ -132,11 +134,6 @@ async function run() {
       res.send(result);
   });
   
-    // app.get('/payments', async (req, res) => {
-    //   const result = await orderCollection.find().toArray();
-    //   res.send(result);
-    // });
-    
 
     // JWT token generation
     app.post('/jwt', async (req, res) => {
