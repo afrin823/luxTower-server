@@ -126,11 +126,16 @@ async function run() {
     //   const result = await orderCollection.find(query).toArray();
     //   res.send(result);
     // });
-  
-    app.get('/payments', async (req, res) => {
+        app.get('/payments/:email', async (req, res) => {
+      // const query = { email: req.params.email };
       const result = await orderCollection.find().toArray();
       res.send(result);
-    });
+  });
+  
+    // app.get('/payments', async (req, res) => {
+    //   const result = await orderCollection.find().toArray();
+    //   res.send(result);
+    // });
     
 
     // JWT token generation
@@ -140,6 +145,7 @@ async function run() {
       res.send({ token });
     });
 
+        // middlewares 
     const verifyAdmin = async (req, res, next) => {
       const email = req.params.email;
       const query = { email: email };
@@ -152,7 +158,7 @@ async function run() {
     };
     
     // Users related API
-    app.get('/users', async (req, res) => {
+    app.get('/users',  async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
