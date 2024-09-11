@@ -44,6 +44,7 @@ async function run() {
     const userCollection = client.db("AppartmentUser").collection("users");
     const announcements = client.db("Announce").collection("announcements");
     const wishlistCollection = client.db("AppermentDB").collection("wishlistCollection");
+    const orderCollection = client.db("order").collection("orderCollection");
 
     // Payment intent
     app.post('/create-payment-intent', async (req, res) => {
@@ -92,13 +93,13 @@ async function run() {
           paymentStatus: false,
           tranjectionId: tran_id,
         };
-        const result = wishlistCollection.insertOne(finalPayment)
+        const result = orderCollection.insertOne(finalPayment)
       });
     })
 
     app.post('/payment/success/:tranId', async (req, res) => {
       console.log(req.params.tranId);
-      const result = await wishlistCollection.updateOne({ tranjectionId: req.params.tranId }, {
+      const result = await orderCollection.updateOne({ tranjectionId: req.params.tranId }, {
         $set: {
           paymentStatus: true,
         },
@@ -109,7 +110,7 @@ async function run() {
       }
     });
     app.post('/payment/fail/:tranId', async (req, res) => {
-      const result = await wishlistCollection.deleteOne({
+      const result = await orderCollection.deleteOne({
         tranjectionId: req.params.tranId
       });
       if (result.deletedCount) {
@@ -117,6 +118,20 @@ async function run() {
       };
     })
 
+    // app.get('/payments/:email',  async (req, res) => {
+    //   const query = { email: req.params.email };
+    //   if (req.params.email !== req.decoded.email) {
+    //     return res.status(403).send({ message: 'forbidden access' });
+    //   }
+    //   const result = await orderCollection.find(query).toArray();
+    //   res.send(result);
+    // });
+  
+    app.get('/payments', async (req, res) => {
+      const result = await orderCollection.find().toArray();
+      res.send(result);
+    });
+    
 
     // JWT token generation
     app.post('/jwt', async (req, res) => {
@@ -135,6 +150,7 @@ async function run() {
       }
       next();
     };
+    
     // Users related API
     app.get('/users', async (req, res) => {
       const result = await userCollection.find().toArray();
