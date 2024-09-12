@@ -11,9 +11,8 @@ const port = process.env.PORT || 4000;
 const corsOptions = {
   origin: [
     "http://localhost:5173",
-    "https://building-management-39823.web.app",
-    // "https://buliding-management-server.vercel.app",
-    "https://luxtower.netlify.app"
+    "https://luxtower.netlify.app",
+    
   ],
   credentials: true,
   optionSuccessStatus: 200,
