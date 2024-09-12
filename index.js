@@ -119,14 +119,6 @@ async function run() {
       };
     })
 
-    // app.get('/payments/:email',  async (req, res) => {
-    //   const query = { email: req.params.email };
-    //   if (req.params.email !== req.decoded.email) {
-    //     return res.status(403).send({ message: 'forbidden access' });
-    //   }
-    //   const result = await orderCollection.find(query).toArray();
-    //   res.send(result);
-    // });
         app.get('/payments/:email', async (req, res) => {
       // const query = { email: req.params.email };
       const result = await orderCollection.find().toArray();
