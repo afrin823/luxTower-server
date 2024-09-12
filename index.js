@@ -37,7 +37,7 @@ const is_live = false //true for live, false for sandbox
 
 async function run() {
   try {
-    await client.connect();
+   
 
     const apartmentCollection = client.db("AppermentDB").collection("appermentCollection");
     const couponCollection = client.db("cuponDB").collection("couponCollection");
@@ -377,8 +377,7 @@ async function run() {
       }
     });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+  
   } finally {
     // await client.close();
   }
