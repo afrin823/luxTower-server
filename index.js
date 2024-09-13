@@ -57,7 +57,7 @@ async function run() {
         currency: 'BDT',
         tran_id: tran_id, // use unique tran_id for each api call
         success_url: `https://buliding-management-server.vercel.app/payment/success/${tran_id}`,
-        fail_url: `https://buliding-management-server.vercel.app/dashboard/fail-payment/${tran_id}`,
+        fail_url: `https://buliding-management-server.vercel.app/payment/fail-payment/${tran_id}`,
         cancel_url: 'http://localhost:3030/cancel',
         ipn_url: 'http://localhost:3030/ipn',
         shipping_method: 'Courier',
@@ -111,8 +111,7 @@ async function run() {
       }
     });
     app.post('/payment/fail/:tranId', async (req, res) => {
-      const result = await orderCollection.deleteOne({
-        tranjectionId: req.params.tranId
+      const result = await orderCollection.deleteOne({tranjectionId: req.params.tranId
       });
       if (result.deletedCount) {
         res.redirect(`https://luxtower.netlify.app/dashboard/fail-payment/${req.params.tranId}`)
