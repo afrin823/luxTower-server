@@ -16,6 +16,7 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.8.0",
+    "react-messenger-customer-chat": "^0.8.0",
     "sslcommerz-lts": "^1.1.0",
     "stripe": "^16.9.0"
   }

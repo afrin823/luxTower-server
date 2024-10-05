@@ -248,6 +248,13 @@ async function run() {
       res.send(result);
 
     });
+    app.get('/apartment/:id', async (req, res) => {
+      const id = req.body.id;
+      const query = { _id: id };
+      const result = await apartmentCollection.findOne(query);
+      res.send(result);
+
+    });
 
     // Coupons endpoint
     app.get('/coupon', async (req, res) => {
@@ -267,35 +274,7 @@ async function run() {
 
     });
 
-    // app.get("/bookedApartments/:email", async (req, res) => {
-    //   const email = req.params.email;
-    //   const query = { "userInfo.email": email };
 
-    //   const booked_apartment = await wishlistCollection.findOne(query);
-
-    //   if (booked_apartment) {
-    //     const apartmentId = booked_apartment._id;
-
-    //     const apartmentQuery = { _id: new ObjectId(apartmentId) };
-
-    //     const apartmentInfo = await apartmentCollection.findOne(apartmentQuery);
-
-    //     const result = {
-    //       _id: apartmentInfo._id,
-    //       image: apartmentInfo.image,
-    //       block_name: apartmentInfo.block_name,
-    //       apartment_no: apartmentInfo.apartment_no,
-    //       floor_no: apartmentInfo.floor_no,
-    //       rent: apartmentInfo.rent,
-    //       status: booked_apartment.status,
-    //       // request_date: booked_apartment.request_date,
-    //     };
-
-    //     res.status(200).send(result);
-    //   } else {
-    //     res.send("You do not agreement to book.");
-    //   }
-    // });
 
 
     app.patch("/bookedApartments/:id", async (req, res) => {
