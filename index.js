@@ -249,8 +249,9 @@ async function run() {
 
     });
     app.get('/apartment/:id', async (req, res) => {
-      const id = req.body.id;
+      const id = req.params.id;
       const query = { _id: id };
+      console.log(query);
       const result = await apartmentCollection.findOne(query);
       res.send(result);
 
