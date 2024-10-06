@@ -248,6 +248,7 @@ async function run() {
       res.send(result);
 
     });
+    // apartment id select
     app.get('/apartment/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: id };
@@ -256,6 +257,29 @@ async function run() {
       res.send(result);
 
     });
+
+    //update apartment
+    app.patch('/apartment/update/:id', async(req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = {_id: id}
+      
+      const option = {upsert: true}
+      const apartment = req.body;
+      
+      const updateDoc = {
+        $set: {
+          image: apartment.image,
+          rent: apartment.rent,
+          request_date:apartment.request_date,
+          block_name: apartment.block_name,
+          apartment_no: apartment.apartment_no,
+          floor_no: apartment.floor_no
+        }
+      }
+      const result = await apartmentCollection.updateOne(query, updateDoc, option)
+      res.send(result)
+    })
 
     // Coupons endpoint
     app.get('/coupon', async (req, res) => {
